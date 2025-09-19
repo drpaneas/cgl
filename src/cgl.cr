@@ -23,6 +23,8 @@ COLORS = StaticArray[
 module CGL
   @@cursor_x = 0_i32
   @@cursor_y = 0_i32
+  @@draw_color = 6_i32 # Default to light grey (PICO-8 default)
+  @@scale = 4_i32      # Default scale factor
   @@init_func : Proc(Nil) | Nil = nil
   @@update_func : Proc(Nil) | Nil = nil
   @@draw_func : Proc(Nil) | Nil = nil
@@ -41,6 +43,14 @@ module CGL
     @@cursor_x = x; @@cursor_y = y
   end
 
+  def self.draw_color
+    @@draw_color
+  end
+
+  def self.set_draw_color(col)
+    @@draw_color = col & 15 # Clamp to 0-15
+  end
+
   @[AlwaysInline]
   def self.color(index)
     # Branchless clamp: index & 15 is faster than index.clamp(0, 15)
@@ -49,8 +59,9 @@ module CGL
 
   def self.init_window(title = "CGL", scale = 4)
     return if @@initialized
+    @@scale = scale
     Raylib.init_window(128 * scale, 128 * scale, title)
-    Raylib.set_target_fps(60)
+    Raylib.set_target_fps(30) # PICO-8 default is 30 FPS
     @@initialized = true
   end
 
@@ -88,6 +99,20 @@ module CGL
   def self.set_draw(&block)
     @@draw_func = block; check_auto_run
   end
+
+  @[AlwaysInline]
+  def self.pset(x, y, col = nil)
+    # Use provided color or current draw color
+    if col.nil?
+      pixel_color = @@draw_color
+    else
+      pixel_color = col & 15
+      # Update draw color if color was provided (PICO-8 behavior)
+      @@draw_color = pixel_color
+    end
+    # Draw scaled pixel - use bit shifting for 4x scale (x << 2 == x * 4)
+    Raylib.draw_rectangle(x << 2, y << 2, @@scale, @@scale, COLORS.unsafe_fetch(pixel_color))
+  end
 end
 
 def _init(&block)
@@ -106,4 +131,12 @@ end
 def cls(col = 0)
   CGL.set_cursor(0, 0)
   Raylib.clear_background(CGL.color(col))
+end
+
+def pset(x, y, col = nil)
+  CGL.pset(x, y, col)
+end
+
+def color(col)
+  CGL.set_draw_color(col)
 end
