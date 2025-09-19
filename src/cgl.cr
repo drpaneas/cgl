@@ -113,6 +113,49 @@ module CGL
     # Draw scaled pixel - use bit shifting for 4x scale (x << 2 == x * 4)
     Raylib.draw_rectangle(x << 2, y << 2, @@scale, @@scale, COLORS.unsafe_fetch(pixel_color))
   end
+
+  # Optimized Bresenham's line algorithm for PICO-8
+  def self.line(x0, y0, x1, y1, col = nil)
+    # Handle color parameter like pset
+    if col.nil?
+      line_color = @@draw_color
+    else
+      line_color = col & 15
+      @@draw_color = line_color
+    end
+
+    # Pre-fetch color to avoid repeated lookups
+    pixel_color = COLORS.unsafe_fetch(line_color)
+
+    # Optimized Bresenham's line algorithm
+    dx = (x1 - x0).abs
+    dy = (y1 - y0).abs
+    sx = x0 < x1 ? 1 : -1
+    sy = y0 < y1 ? 1 : -1
+    err = dx - dy
+
+    x = x0
+    y = y0
+
+    loop do
+      # Draw pixel at current position - optimized with pre-shifted coordinates
+      Raylib.draw_rectangle(x << 2, y << 2, @@scale, @@scale, pixel_color)
+
+      # Check if we've reached the end point
+      break if x == x1 && y == y1
+
+      # Calculate next position - optimized with single calculation
+      e2 = err << 1 # Equivalent to 2 * err but faster
+      if e2 > -dy
+        err -= dy
+        x += sx
+      end
+      if e2 < dx
+        err += dx
+        y += sy
+      end
+    end
+  end
 end
 
 def _init(&block)
@@ -135,6 +178,10 @@ end
 
 def pset(x, y, col = nil)
   CGL.pset(x, y, col)
+end
+
+def line(x0, y0, x1, y1, col = nil)
+  CGL.line(x0, y0, x1, y1, col)
 end
 
 def color(col)
