@@ -1,0 +1,7 @@
+/lib/
+/bin/
+*.dwarf
+*.o
+*.a
+.crystal/
+shard.lock
