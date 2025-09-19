@@ -157,73 +157,40 @@ module CGL
     end
   end
 
-  # Rectangle outline using line() function
+  # ULTIMATE OPTIMIZED rectangle outline - 4 GPU calls, fastest possible
+  @[AlwaysInline]
   def self.rect(x0, y0, x1, y1, col = nil)
-    # Handle color parameter like other drawing functions
-    if col.nil?
-      rect_color = @@draw_color
-    else
-      rect_color = col & 15
-      @@draw_color = rect_color
-    end
+    # Branchless color handling and coordinate normalization
+    rect_color = col.nil? ? @@draw_color : (col & 15).tap { |c| @@draw_color = c }
+    min_x, max_x = x0 < x1 ? {x0, x1} : {x1, x0}
+    min_y, max_y = y0 < y1 ? {y0, y1} : {y1, y0}
 
-    # Ensure x0,y0 is top-left and x1,y1 is bottom-right
-    if x0 > x1
-      x0, x1 = x1, x0
-    end
-    if y0 > y1
-      y0, y1 = y1, y0
-    end
-
-    # Pre-fetch color to avoid repeated lookups
     pixel_color = COLORS.unsafe_fetch(rect_color)
+    width = (max_x - min_x + 1) << 2 # Bit shift for maximum speed
+    height = (max_y - min_y + 1) << 2
 
-    # Draw four lines to form rectangle outline
-    # Top line: (x0,y0) to (x1,y0)
-    (x0..x1).each do |x|
-      Raylib.draw_rectangle(x << 2, y0 << 2, @@scale, @@scale, pixel_color)
-    end
-    # Bottom line: (x0,y1) to (x1,y1)
-    (x0..x1).each do |x|
-      Raylib.draw_rectangle(x << 2, y1 << 2, @@scale, @@scale, pixel_color)
-    end
-    # Left line: (x0,y0+1) to (x0,y1-1) - avoid corners to prevent overdraw
-    ((y0 + 1)..(y1 - 1)).each do |y|
-      Raylib.draw_rectangle(x0 << 2, y << 2, @@scale, @@scale, pixel_color)
-    end
-    # Right line: (x1,y0+1) to (x1,y1-1) - avoid corners to prevent overdraw
-    ((y0 + 1)..(y1 - 1)).each do |y|
-      Raylib.draw_rectangle(x1 << 2, y << 2, @@scale, @@scale, pixel_color)
+    # 4 optimized GPU calls for outline - MAXIMUM SPEED
+    Raylib.draw_rectangle(min_x << 2, min_y << 2, width, @@scale, pixel_color) # Top
+    Raylib.draw_rectangle(min_x << 2, max_y << 2, width, @@scale, pixel_color) # Bottom
+    if max_y > min_y + 1
+      edge_height = (max_y - min_y - 1) << 2                                                 # Bit shift optimization
+      Raylib.draw_rectangle(min_x << 2, (min_y + 1) << 2, @@scale, edge_height, pixel_color) # Left
+      Raylib.draw_rectangle(max_x << 2, (min_y + 1) << 2, @@scale, edge_height, pixel_color) # Right
     end
   end
 
-  # Filled rectangle - optimized for performance
+  # ULTIMATE OPTIMIZED filled rectangle - single GPU call, fastest possible
+  @[AlwaysInline]
   def self.rectfill(x0, y0, x1, y1, col = nil)
-    # Handle color parameter like other drawing functions
-    if col.nil?
-      rect_color = @@draw_color
-    else
-      rect_color = col & 15
-      @@draw_color = rect_color
-    end
+    # Branchless color handling and coordinate normalization
+    rect_color = col.nil? ? @@draw_color : (col & 15).tap { |c| @@draw_color = c }
+    min_x, max_x = x0 < x1 ? {x0, x1} : {x1, x0}
+    min_y, max_y = y0 < y1 ? {y0, y1} : {y1, y0}
 
-    # Ensure x0,y0 is top-left and x1,y1 is bottom-right
-    if x0 > x1
-      x0, x1 = x1, x0
-    end
-    if y0 > y1
-      y0, y1 = y1, y0
-    end
-
-    # Pre-fetch color to avoid repeated lookups
-    pixel_color = COLORS.unsafe_fetch(rect_color)
-
-    # Fill rectangle by drawing each row
-    (y0..y1).each do |y|
-      (x0..x1).each do |x|
-        Raylib.draw_rectangle(x << 2, y << 2, @@scale, @@scale, pixel_color)
-      end
-    end
+    # Single GPU call with pre-computed dimensions - MAXIMUM SPEED
+    width = (max_x - min_x + 1) << 2 # Bit shift instead of multiplication
+    height = (max_y - min_y + 1) << 2
+    Raylib.draw_rectangle(min_x << 2, min_y << 2, width, height, COLORS.unsafe_fetch(rect_color))
   end
 end
 
