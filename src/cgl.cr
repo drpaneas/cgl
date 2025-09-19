@@ -156,6 +156,75 @@ module CGL
       end
     end
   end
+
+  # Rectangle outline using line() function
+  def self.rect(x0, y0, x1, y1, col = nil)
+    # Handle color parameter like other drawing functions
+    if col.nil?
+      rect_color = @@draw_color
+    else
+      rect_color = col & 15
+      @@draw_color = rect_color
+    end
+
+    # Ensure x0,y0 is top-left and x1,y1 is bottom-right
+    if x0 > x1
+      x0, x1 = x1, x0
+    end
+    if y0 > y1
+      y0, y1 = y1, y0
+    end
+
+    # Pre-fetch color to avoid repeated lookups
+    pixel_color = COLORS.unsafe_fetch(rect_color)
+
+    # Draw four lines to form rectangle outline
+    # Top line: (x0,y0) to (x1,y0)
+    (x0..x1).each do |x|
+      Raylib.draw_rectangle(x << 2, y0 << 2, @@scale, @@scale, pixel_color)
+    end
+    # Bottom line: (x0,y1) to (x1,y1)
+    (x0..x1).each do |x|
+      Raylib.draw_rectangle(x << 2, y1 << 2, @@scale, @@scale, pixel_color)
+    end
+    # Left line: (x0,y0+1) to (x0,y1-1) - avoid corners to prevent overdraw
+    ((y0 + 1)..(y1 - 1)).each do |y|
+      Raylib.draw_rectangle(x0 << 2, y << 2, @@scale, @@scale, pixel_color)
+    end
+    # Right line: (x1,y0+1) to (x1,y1-1) - avoid corners to prevent overdraw
+    ((y0 + 1)..(y1 - 1)).each do |y|
+      Raylib.draw_rectangle(x1 << 2, y << 2, @@scale, @@scale, pixel_color)
+    end
+  end
+
+  # Filled rectangle - optimized for performance
+  def self.rectfill(x0, y0, x1, y1, col = nil)
+    # Handle color parameter like other drawing functions
+    if col.nil?
+      rect_color = @@draw_color
+    else
+      rect_color = col & 15
+      @@draw_color = rect_color
+    end
+
+    # Ensure x0,y0 is top-left and x1,y1 is bottom-right
+    if x0 > x1
+      x0, x1 = x1, x0
+    end
+    if y0 > y1
+      y0, y1 = y1, y0
+    end
+
+    # Pre-fetch color to avoid repeated lookups
+    pixel_color = COLORS.unsafe_fetch(rect_color)
+
+    # Fill rectangle by drawing each row
+    (y0..y1).each do |y|
+      (x0..x1).each do |x|
+        Raylib.draw_rectangle(x << 2, y << 2, @@scale, @@scale, pixel_color)
+      end
+    end
+  end
 end
 
 def _init(&block)
@@ -182,6 +251,14 @@ end
 
 def line(x0, y0, x1, y1, col = nil)
   CGL.line(x0, y0, x1, y1, col)
+end
+
+def rect(x0, y0, x1, y1, col = nil)
+  CGL.rect(x0, y0, x1, y1, col)
+end
+
+def rectfill(x0, y0, x1, y1, col = nil)
+  CGL.rectfill(x0, y0, x1, y1, col)
 end
 
 def color(col)
