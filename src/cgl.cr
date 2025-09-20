@@ -208,6 +208,26 @@ module CGL
     Raylib.draw_rectangle(min_x << 2, min_y << 2, width, height, COLORS.unsafe_fetch(rect_color))
   end
 
+  # Sub-pixel accurate rectfill for smooth movement (takes float coordinates)
+  @[AlwaysInline]
+  def self.rectfill_smooth(x0, y0, x1, y1, col = nil)
+    rect_color = col.nil? ? @@draw_color : (col & 15).tap { |c| @@draw_color = c }
+    
+    # Handle floating point coordinates directly for smooth movement
+    min_x = x0 < x1 ? x0 : x1
+    min_y = y0 < y1 ? y0 : y1
+    max_x = x0 < x1 ? x1 : x0
+    max_y = y0 < y1 ? y1 : y0
+    
+    # Convert to screen coordinates with sub-pixel precision
+    screen_x = (min_x * @@scale).to_i
+    screen_y = (min_y * @@scale).to_i
+    screen_w = ((max_x - min_x + 1) * @@scale).to_i
+    screen_h = ((max_y - min_y + 1) * @@scale).to_i
+    
+    Raylib.draw_rectangle(screen_x, screen_y, screen_w, screen_h, COLORS.unsafe_fetch(rect_color))
+  end
+
   # Math functions - PICO-8 compatible
   @[AlwaysInline]
   def self.flr(a)
@@ -355,4 +375,8 @@ end
 
 def btnp(index, player = 0)
   CGL.btnp(index, player)
+end
+
+def rectfill_smooth(x0, y0, x1, y1, col = nil)
+  CGL.rectfill_smooth(x0, y0, x1, y1, col)
 end

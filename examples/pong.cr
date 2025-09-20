@@ -152,29 +152,32 @@ _draw do
     current_line_y += line_length * 2
   end
 
-  # Draw ball with sub-pixel accuracy - NO MORE JITTER!
-  # Use floating point coordinates directly for smooth movement
-  scale = 4 # Our standard scale factor
-  ball_x = (ball[:x] * scale).to_i
-  ball_y = (ball[:y] * scale).to_i
-  ball_size = ball[:w] * scale
+  # Draw ball with sub-pixel accuracy using CGL function - NO MORE JITTER!
+  rectfill_smooth(
+    ball[:x],
+    ball[:y],
+    ball[:x] + ball[:w],
+    ball[:y] + ball[:w],
+    ball[:c]
+  )
 
-  # Direct Raylib call with fractional positioning - SMOOTH MOVEMENT!
-  Raylib.draw_rectangle(ball_x, ball_y, ball_size, ball_size, COLORS.unsafe_fetch(ball[:c]))
+  # Draw player paddle with sub-pixel accuracy using CGL function - SMOOTH!
+  rectfill_smooth(
+    player[:x],
+    player[:y],
+    player[:x] + player[:w],
+    player[:y] + player[:h],
+    player[:c]
+  )
 
-  # Draw player paddle with sub-pixel accuracy - SMOOTH!
-  player_x = (player[:x] * scale).to_i
-  player_y = (player[:y] * scale).to_i
-  player_w = player[:w] * scale
-  player_h = player[:h] * scale
-  Raylib.draw_rectangle(player_x, player_y, player_w, player_h, COLORS.unsafe_fetch(player[:c]))
-
-  # Draw computer paddle with sub-pixel accuracy - SMOOTH!
-  com_x = (com[:x] * scale).to_i
-  com_y = (com[:y] * scale).to_i
-  com_w = com[:w] * scale
-  com_h = com[:h] * scale
-  Raylib.draw_rectangle(com_x, com_y, com_w, com_h, COLORS.unsafe_fetch(com[:c]))
+  # Draw computer paddle with sub-pixel accuracy using CGL function - SMOOTH!
+  rectfill_smooth(
+    com[:x],
+    com[:y],
+    com[:x] + com[:w],
+    com[:y] + com[:h],
+    com[:c]
+  )
 
   # Draw scores
   print(player_points.to_s, 30, 2, player[:c])
