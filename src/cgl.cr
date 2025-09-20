@@ -192,6 +192,17 @@ module CGL
     height = (max_y - min_y + 1) << 2
     Raylib.draw_rectangle(min_x << 2, min_y << 2, width, height, COLORS.unsafe_fetch(rect_color))
   end
+
+  # Math functions - PICO-8 compatible
+  @[AlwaysInline]
+  def self.flr(a)
+    a.floor.to_i32
+  end
+
+  @[AlwaysInline]
+  def self.rnd(limit = 1.0)
+    Random.rand(limit.to_f64)
+  end
 end
 
 def _init(&block)
@@ -230,4 +241,12 @@ end
 
 def color(col)
   CGL.set_draw_color(col)
+end
+
+def flr(a)
+  CGL.flr(a)
+end
+
+def rnd(limit = 1.0)
+  CGL.rnd(limit)
 end
