@@ -31,6 +31,20 @@ module CGL
   @@auto_run = true
   @@initialized = false
 
+  # Input state tracking for btn() and btnp()
+  @@button_state = StaticArray(Bool, 48).new(false)      # 6 buttons × 8 players = 48
+  @@button_prev_state = StaticArray(Bool, 48).new(false) # Previous frame state for btnp()
+
+  # PICO-8 button mapping to Raylib keys
+  BUTTON_KEYS = StaticArray[
+    Raylib::KeyboardKey::Left,   # 0 - Left arrow
+    Raylib::KeyboardKey::Right,  # 1 - Right arrow
+    Raylib::KeyboardKey::Up,     # 2 - Up arrow
+    Raylib::KeyboardKey::Down,   # 3 - Down arrow
+    Raylib::KeyboardKey::Z,      # 4 - O button (Z key)
+    Raylib::KeyboardKey::X,      # 5 - X button (X key)
+  ]
+
   def self.cursor_x
     @@cursor_x
   end
@@ -79,6 +93,7 @@ module CGL
         @@init_func.not_nil!.call
         while !Raylib.close_window?
           Raylib.begin_drawing
+          update_input  # Update input state every frame
           @@update_func.not_nil!.call
           @@draw_func.not_nil!.call
           Raylib.end_drawing
@@ -251,6 +266,37 @@ module CGL
     @@cursor_y = print_y
     {final_x, print_y}
   end
+
+  # Update input state - call this every frame
+  def self.update_input
+    # Save previous state for btnp() detection
+    @@button_prev_state = @@button_state.dup
+    
+    # Update current button state for player 0 (main player)
+    6.times do |i|
+      @@button_state[i] = Raylib.key_down?(BUTTON_KEYS.unsafe_fetch(i))
+    end
+    
+    # For multiplayer (players 1-7), we'd need additional key mappings
+    # Currently implementing single player only
+  end
+
+  # PICO-8 btn() function - returns true while button is held
+  @[AlwaysInline]
+  def self.btn(index, player = 0)
+    return false if index < 0 || index > 5 || player < 0 || player > 7
+    button_idx = player * 6 + index
+    @@button_state.unsafe_fetch(button_idx)
+  end
+
+  # PICO-8 btnp() function - returns true only on button press (not hold)
+  @[AlwaysInline]
+  def self.btnp(index, player = 0)
+    return false if index < 0 || index > 5 || player < 0 || player > 7
+    button_idx = player * 6 + index
+    # True only if button is pressed this frame but wasn't pressed last frame
+    @@button_state.unsafe_fetch(button_idx) && !@@button_prev_state.unsafe_fetch(button_idx)
+  end
 end
 
 def _init(&block)
@@ -301,4 +347,12 @@ end
 
 def print(text, x = nil, y = nil, col = nil)
   CGL.print(text, x, y, col)
+end
+
+def btn(index, player = 0)
+  CGL.btn(index, player)
+end
+
+def btnp(index, player = 0)
+  CGL.btnp(index, player)
 end
