@@ -37,12 +37,12 @@ module CGL
 
   # PICO-8 button mapping to Raylib keys
   BUTTON_KEYS = StaticArray[
-    Raylib::KeyboardKey::Left,   # 0 - Left arrow
-    Raylib::KeyboardKey::Right,  # 1 - Right arrow
-    Raylib::KeyboardKey::Up,     # 2 - Up arrow
-    Raylib::KeyboardKey::Down,   # 3 - Down arrow
-    Raylib::KeyboardKey::Z,      # 4 - O button (Z key)
-    Raylib::KeyboardKey::X,      # 5 - X button (X key)
+    Raylib::KeyboardKey::Left,  # 0 - Left arrow
+    Raylib::KeyboardKey::Right, # 1 - Right arrow
+    Raylib::KeyboardKey::Up,    # 2 - Up arrow
+    Raylib::KeyboardKey::Down,  # 3 - Down arrow
+    Raylib::KeyboardKey::Z,     # 4 - O button (Z key)
+    Raylib::KeyboardKey::X,     # 5 - X button (X key)
   ]
 
   def self.cursor_x
@@ -93,7 +93,7 @@ module CGL
         @@init_func.not_nil!.call
         while !Raylib.close_window?
           Raylib.begin_drawing
-          update_input  # Update input state every frame
+          update_input # Update input state every frame
           @@update_func.not_nil!.call
           @@draw_func.not_nil!.call
           Raylib.end_drawing
@@ -271,12 +271,12 @@ module CGL
   def self.update_input
     # Save previous state for btnp() detection
     @@button_prev_state = @@button_state.dup
-    
+
     # Update current button state for player 0 (main player)
     6.times do |i|
       @@button_state[i] = Raylib.key_down?(BUTTON_KEYS.unsafe_fetch(i))
     end
-    
+
     # For multiplayer (players 1-7), we'd need additional key mappings
     # Currently implementing single player only
   end
