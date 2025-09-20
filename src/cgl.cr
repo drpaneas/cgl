@@ -203,6 +203,117 @@ module CGL
   def self.rnd(limit = 1.0)
     Random.rand(limit.to_f64)
   end
+
+  # Text rendering - simplified PICO-8 font (4x6 pixels per character)
+  def self.print_char(char, x, y, col)
+    # Simple 4x6 font patterns for basic ASCII
+    pattern = case char
+              when 'A', 'a' then [0b0110, 0b1001, 0b1111, 0b1001, 0b1001, 0b0000]
+              when 'B', 'b' then [0b1110, 0b1001, 0b1110, 0b1001, 0b1110, 0b0000]
+              when 'C', 'c' then [0b0111, 0b1000, 0b1000, 0b1000, 0b0111, 0b0000]
+              when 'D', 'd' then [0b1110, 0b1001, 0b1001, 0b1001, 0b1110, 0b0000]
+              when 'E', 'e' then [0b1111, 0b1000, 0b1110, 0b1000, 0b1111, 0b0000]
+              when 'F', 'f' then [0b1111, 0b1000, 0b1110, 0b1000, 0b1000, 0b0000]
+              when 'G', 'g' then [0b0111, 0b1000, 0b1011, 0b1001, 0b0111, 0b0000]
+              when 'H', 'h' then [0b1001, 0b1001, 0b1111, 0b1001, 0b1001, 0b0000]
+              when 'I', 'i' then [0b0111, 0b0010, 0b0010, 0b0010, 0b0111, 0b0000]
+              when 'J', 'j' then [0b0111, 0b0001, 0b0001, 0b1001, 0b0110, 0b0000]
+              when 'K', 'k' then [0b1001, 0b1010, 0b1100, 0b1010, 0b1001, 0b0000]
+              when 'L', 'l' then [0b1000, 0b1000, 0b1000, 0b1000, 0b1111, 0b0000]
+              when 'M', 'm' then [0b1001, 0b1111, 0b1111, 0b1001, 0b1001, 0b0000]
+              when 'N', 'n' then [0b1001, 0b1101, 0b1111, 0b1011, 0b1001, 0b0000]
+              when 'O', 'o' then [0b0110, 0b1001, 0b1001, 0b1001, 0b0110, 0b0000]
+              when 'P', 'p' then [0b1110, 0b1001, 0b1110, 0b1000, 0b1000, 0b0000]
+              when 'Q', 'q' then [0b0110, 0b1001, 0b1001, 0b1011, 0b0111, 0b0000]
+              when 'R', 'r' then [0b1110, 0b1001, 0b1110, 0b1010, 0b1001, 0b0000]
+              when 'S', 's' then [0b0111, 0b1000, 0b0110, 0b0001, 0b1110, 0b0000]
+              when 'T', 't' then [0b1111, 0b0010, 0b0010, 0b0010, 0b0010, 0b0000]
+              when 'U', 'u' then [0b1001, 0b1001, 0b1001, 0b1001, 0b0110, 0b0000]
+              when 'V', 'v' then [0b1001, 0b1001, 0b1001, 0b0110, 0b0110, 0b0000]
+              when 'W', 'w' then [0b1001, 0b1001, 0b1111, 0b1111, 0b1001, 0b0000]
+              when 'X', 'x' then [0b1001, 0b0110, 0b0110, 0b0110, 0b1001, 0b0000]
+              when 'Y', 'y' then [0b1001, 0b1001, 0b0110, 0b0010, 0b0010, 0b0000]
+              when 'Z', 'z' then [0b1111, 0b0001, 0b0110, 0b1000, 0b1111, 0b0000]
+              when '0'      then [0b0110, 0b1001, 0b1001, 0b1001, 0b0110, 0b0000]
+              when '1'      then [0b0010, 0b0110, 0b0010, 0b0010, 0b0111, 0b0000]
+              when '2'      then [0b0110, 0b1001, 0b0010, 0b0100, 0b1111, 0b0000]
+              when '3'      then [0b1111, 0b0010, 0b0110, 0b0001, 0b1110, 0b0000]
+              when '4'      then [0b0010, 0b0110, 0b1010, 0b1111, 0b0010, 0b0000]
+              when '5'      then [0b1111, 0b1000, 0b1110, 0b0001, 0b1110, 0b0000]
+              when '6'      then [0b0110, 0b1000, 0b1110, 0b1001, 0b0110, 0b0000]
+              when '7'      then [0b1111, 0b0001, 0b0010, 0b0100, 0b1000, 0b0000]
+              when '8'      then [0b0110, 0b1001, 0b0110, 0b1001, 0b0110, 0b0000]
+              when '9'      then [0b0110, 0b1001, 0b0111, 0b0001, 0b0110, 0b0000]
+              when ' '      then [0b0000, 0b0000, 0b0000, 0b0000, 0b0000, 0b0000]
+              when '.'      then [0b0000, 0b0000, 0b0000, 0b0000, 0b0010, 0b0000]
+              when ','      then [0b0000, 0b0000, 0b0000, 0b0010, 0b0100, 0b0000]
+              when '!'      then [0b0010, 0b0010, 0b0010, 0b0000, 0b0010, 0b0000]
+              when '?'      then [0b0110, 0b1001, 0b0010, 0b0000, 0b0010, 0b0000]
+              when ':'      then [0b0000, 0b0010, 0b0000, 0b0010, 0b0000, 0b0000]
+              when '-'      then [0b0000, 0b0000, 0b1111, 0b0000, 0b0000, 0b0000]
+              when '='      then [0b0000, 0b1111, 0b0000, 0b1111, 0b0000, 0b0000]
+              else               [0b1111, 0b1001, 0b1001, 0b1001, 0b1111, 0b0000] # Default box
+              end
+
+    # Draw character using pattern
+    6.times do |row|
+      4.times do |bit_col|
+        if (pattern[row] >> (3 - bit_col)) & 1 == 1
+          pset(x + bit_col, y + row, col)
+        end
+      end
+    end
+  end
+
+  # PICO-8 print function with flexible parameters
+  def self.print(text, x = nil, y = nil, col = nil)
+    # Handle PICO-8's flexible parameter behavior
+    if x.nil? && y.nil? && col.nil?
+      # print("text") - use cursor position and current color
+      print_x, print_y, print_col = @@cursor_x, @@cursor_y, @@draw_color
+    elsif y.nil? && col.nil? && x.is_a?(Int32)
+      # print("text", color) - use cursor position with specified color
+      print_x, print_y, print_col = @@cursor_x, @@cursor_y, x & 15
+    elsif col.nil? && x.is_a?(Int32) && y.is_a?(Int32)
+      # print("text", x, y) - use specified position with current color
+      print_x, print_y, print_col = x, y, @@draw_color
+    elsif x.is_a?(Int32) && y.is_a?(Int32) && col.is_a?(Int32)
+      # print("text", x, y, color) - use specified position and color
+      print_x, print_y, print_col = x, y, col & 15
+    else
+      # Default fallback
+      print_x, print_y, print_col = @@cursor_x, @@cursor_y, @@draw_color
+    end
+
+    # Update draw color
+    @@draw_color = print_col
+
+    # Draw each character
+    current_x = print_x
+    current_y = print_y
+    text.to_s.each_char do |char|
+      if char == '\n'
+        # Newline: move to next line
+        current_x = 0
+        current_y += 6
+      else
+        # Draw character and advance cursor
+        print_char(char, current_x, current_y, print_col)
+        current_x += 4
+      end
+
+      # Wrap to next line if we exceed screen width
+      if current_x >= 128
+        current_x = 0
+        current_y += 6
+      end
+    end
+
+    # Update cursor position and return final position (PICO-8 behavior)
+    @@cursor_x = current_x
+    @@cursor_y = current_y
+    {current_x, current_y} # Return cursor position
+  end
 end
 
 def _init(&block)
@@ -249,4 +360,8 @@ end
 
 def rnd(limit = 1.0)
   CGL.rnd(limit)
+end
+
+def print(text, x = nil, y = nil, col = nil)
+  CGL.print(text, x, y, col)
 end
