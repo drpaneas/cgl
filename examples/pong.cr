@@ -42,7 +42,7 @@ _init do
   # end
 end
 
-_update do
+_update60 do
   # Player controls - smooth movement
   if btn(2) && player[:y] > court_top + 1 # Up arrow
     player = player.merge({y: player[:y] - player[:speed]})
@@ -71,22 +71,22 @@ _update do
     end
   end
 
-  # Ball collision with computer paddle
+  # Ball collision with computer paddle - ROBUST AABB collision
   if ball[:dx] > 0 &&
      ball[:x] + ball[:w] >= com[:x] &&
-     ball[:x] + ball[:w] <= com[:x] + com[:w] &&
-     ball[:y] >= com[:y] &&
-     ball[:y] + ball[:w] <= com[:y] + com[:h]
+     ball[:x] <= com[:x] + com[:w] &&
+     ball[:y] + ball[:w] >= com[:y] &&
+     ball[:y] <= com[:y] + com[:h]
     ball = ball.merge({dx: -(ball[:dx] + ball[:speedup])})
     # sfx(0)  # Sound commented out
   end
 
-  # Ball collision with player paddle
+  # Ball collision with player paddle - ROBUST AABB collision
   if ball[:dx] < 0 &&
-     ball[:x] >= player[:x] &&
      ball[:x] <= player[:x] + player[:w] &&
-     ball[:y] >= player[:y] &&
-     ball[:y] + ball[:w] <= player[:y] + player[:h]
+     ball[:x] + ball[:w] >= player[:x] &&
+     ball[:y] + ball[:w] >= player[:y] &&
+     ball[:y] <= player[:y] + player[:h]
     # Control ball DY if hit and press up or down
     new_dy = ball[:dy]
     if btn(2) # Up arrow

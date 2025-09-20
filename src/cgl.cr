@@ -27,9 +27,11 @@ module CGL
   @@scale = 4_i32      # Default scale factor
   @@init_func : Proc(Nil) | Nil = nil
   @@update_func : Proc(Nil) | Nil = nil
+  @@update60_func : Proc(Nil) | Nil = nil
   @@draw_func : Proc(Nil) | Nil = nil
   @@auto_run = true
   @@initialized = false
+  @@use_60fps = false
 
   # Input state tracking for btn() and btnp()
   @@button_state = StaticArray(Bool, 48).new(false)      # 6 buttons × 8 players = 48
@@ -75,7 +77,9 @@ module CGL
     return if @@initialized
     @@scale = scale
     Raylib.init_window(128 * scale, 128 * scale, title)
-    Raylib.set_target_fps(30) # PICO-8 default is 30 FPS
+    # Set FPS based on whether _update60() is used
+    fps = @@use_60fps ? 60 : 30
+    Raylib.set_target_fps(fps)
     @@initialized = true
   end
 
@@ -86,7 +90,9 @@ module CGL
   end
 
   def self.check_auto_run
-    if @@auto_run && @@init_func && @@update_func && @@draw_func
+    # Check if we have all required functions (either _update or _update60)
+    has_update = @@update_func || @@update60_func
+    if @@auto_run && @@init_func && has_update && @@draw_func
       @@auto_run = false
       at_exit {
         init_window
@@ -94,7 +100,12 @@ module CGL
         while !Raylib.close_window?
           Raylib.begin_drawing
           update_input # Update input state every frame
-          @@update_func.not_nil!.call
+          # Call appropriate update function
+          if @@update60_func
+            @@update60_func.not_nil!.call
+          else
+            @@update_func.try &.call
+          end
           @@draw_func.not_nil!.call
           Raylib.end_drawing
         end
@@ -109,6 +120,12 @@ module CGL
 
   def self.set_update(&block)
     @@update_func = block; check_auto_run
+  end
+
+  def self.set_update60(&block)
+    @@update60_func = block
+    @@use_60fps = true
+    check_auto_run
   end
 
   def self.set_draw(&block)
@@ -212,19 +229,19 @@ module CGL
   @[AlwaysInline]
   def self.rectfill_smooth(x0, y0, x1, y1, col = nil)
     rect_color = col.nil? ? @@draw_color : (col & 15).tap { |c| @@draw_color = c }
-    
+
     # Handle floating point coordinates directly for smooth movement
     min_x = x0 < x1 ? x0 : x1
     min_y = y0 < y1 ? y0 : y1
     max_x = x0 < x1 ? x1 : x0
     max_y = y0 < y1 ? y1 : y0
-    
+
     # Convert to screen coordinates with sub-pixel precision
     screen_x = (min_x * @@scale).to_i
     screen_y = (min_y * @@scale).to_i
     screen_w = ((max_x - min_x + 1) * @@scale).to_i
     screen_h = ((max_y - min_y + 1) * @@scale).to_i
-    
+
     Raylib.draw_rectangle(screen_x, screen_y, screen_w, screen_h, COLORS.unsafe_fetch(rect_color))
   end
 
@@ -325,6 +342,10 @@ end
 
 def _update(&block)
   CGL.set_update(&block)
+end
+
+def _update60(&block)
+  CGL.set_update60(&block)
 end
 
 def _draw(&block)
